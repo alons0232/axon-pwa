@@ -1,0 +1,942 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no,viewport-fit=cover"/>
+<meta name="theme-color" content="#07090F"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+<meta name="apple-mobile-web-app-title" content="AXON"/>
+<meta name="description" content="Tu Sistema Operativo Personal — datos que tú mismo generas cada día"/>
+<meta name="mobile-web-app-capable" content="yes"/>
+<link rel="manifest" href="/manifest.json"/>
+<link rel="apple-touch-icon" href="/icons/icon-192.png"/>
+<title>AXON — Tu Sistema Operativo Personal</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0;}
+  :root{
+    --bg:#07090F;--surface:#0D1117;--card:#111827;--border:#1F2937;
+    --accent:#00FFB2;--accentd:#00FFB215;--blue:#3B82F6;--purple:#8B5CF6;
+    --warm:#FF6B35;--rose:#F43F5E;--text:#F0F4FF;--muted:#6B7280;--dim:#374151;
+    --safe-bottom:env(safe-area-inset-bottom,0px);
+  }
+  html{-webkit-text-size-adjust:100%;-webkit-tap-highlight-color:transparent;}
+  body{background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,sans-serif;min-height:100vh;min-height:100dvh;overflow-x:hidden;-webkit-font-smoothing:antialiased;}
+  ::-webkit-scrollbar{width:4px;}
+  ::-webkit-scrollbar-track{background:var(--bg);}
+  ::-webkit-scrollbar-thumb{background:var(--dim);border-radius:4px;}
+  input,textarea,button,select{font-family:inherit;font-size:inherit;}
+  @keyframes spin{to{transform:rotate(360deg);}}
+  @keyframes fadeUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:0.3}}
+  @keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
+
+  .grid-bg{position:fixed;inset:0;z-index:0;pointer-events:none;
+    background-image:linear-gradient(rgba(255,255,255,0.02) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,0.02) 1px,transparent 1px);
+    background-size:60px 60px;}
+  .orb{position:fixed;border-radius:50%;filter:blur(100px);pointer-events:none;opacity:0.2;z-index:0;}
+
+  /* ── Screens ── */
+  .screen{display:none;position:relative;z-index:1;padding:24px 20px calc(90px + var(--safe-bottom));max-width:500px;margin:0 auto;}
+  .screen.active{display:block;animation:fadeUp 0.5s ease both;}
+
+  /* ── Components ── */
+  .tag{font-family:monospace;font-size:10px;font-weight:700;letter-spacing:3px;text-transform:uppercase;
+    color:var(--accent);border:1px solid rgba(0,255,178,0.25);padding:4px 12px;border-radius:2px;display:inline-block;}
+  .card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:20px;}
+  .card.accent-top{border-top:2px solid var(--accent);}
+
+  .btn{border:none;border-radius:10px;padding:12px 26px;font-size:13px;font-weight:700;
+    cursor:pointer;font-family:monospace;letter-spacing:1.5px;transition:all 0.2s;width:100%;margin-bottom:10px;
+    -webkit-appearance:none;touch-action:manipulation;}
+  .btn-primary{background:var(--accent);color:var(--bg);box-shadow:0 0 24px rgba(0,255,178,0.3);}
+  .btn-primary:active{box-shadow:0 0 12px rgba(0,255,178,0.2);transform:scale(0.98);}
+  .btn-ghost{background:transparent;color:var(--muted);border:1px solid var(--border);}
+  .btn-danger{background:rgba(244,63,94,0.15);color:var(--rose);border:1px solid rgba(244,63,94,0.3);}
+
+  .input-group{margin-bottom:16px;}
+  .input-label{font-size:11px;color:var(--muted);font-family:monospace;letter-spacing:2px;margin-bottom:6px;display:block;}
+  .input-field{width:100%;background:var(--surface);border:1px solid var(--border);border-radius:8px;
+    padding:11px 14px;color:var(--text);font-size:16px;font-family:monospace;outline:none;
+    transition:border-color 0.2s;-webkit-appearance:none;}
+  .input-field:focus{border-color:var(--accent);}
+
+  /* ── Nav ── */
+  .nav{position:fixed;bottom:0;left:0;right:0;z-index:100;background:rgba(13,17,23,0.95);
+    backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-top:1px solid var(--border);
+    display:flex;justify-content:space-around;padding:10px 0 calc(12px + var(--safe-bottom));}
+  .nav-btn{background:none;border:none;cursor:pointer;display:flex;flex-direction:column;
+    align-items:center;gap:4px;color:var(--muted);transition:color 0.2s;touch-action:manipulation;
+    -webkit-tap-highlight-color:transparent;}
+  .nav-btn.active{color:var(--accent);}
+  .nav-icon{font-size:20px;}
+  .nav-label{font-size:9px;font-family:monospace;letter-spacing:1.5px;font-weight:700;}
+
+  /* ── Stats & Metrics ── */
+  .stat-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px 16px;text-align:center;}
+  .stat-val{font-size:20px;font-weight:900;font-family:monospace;}
+  .stat-label{font-size:9px;color:var(--muted);font-family:monospace;letter-spacing:1.5px;margin-top:3px;}
+  .metric-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px 18px;}
+  .metric-val{font-size:28px;font-weight:900;font-family:monospace;}
+  .metric-bar{height:3px;background:var(--border);border-radius:99px;margin-top:8px;}
+  .metric-fill{height:100%;border-radius:99px;transition:width 0.8s ease;}
+
+  /* ── Sliders ── */
+  .slider-row{margin-bottom:20px;}
+  .slider-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;}
+  .slider-val{font-family:monospace;font-size:14px;font-weight:700;}
+  input[type=range]{width:100%;height:4px;cursor:pointer;-webkit-appearance:none;background:var(--dim);border-radius:99px;}
+  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:20px;height:20px;border-radius:50%;background:var(--accent);border:3px solid var(--bg);box-shadow:0 0 8px rgba(0,255,178,0.3);}
+
+  /* ── Toggles ── */
+  .toggle-row{display:flex;justify-content:space-between;align-items:center;
+    padding:14px 16px;border-radius:10px;cursor:pointer;margin-bottom:10px;
+    border:1px solid var(--border);transition:all 0.2s;-webkit-user-select:none;user-select:none;}
+  .toggle-row.on{border-color:var(--accent);background:var(--accentd);}
+  .toggle-dot{width:22px;height:22px;border-radius:50%;background:var(--dim);
+    display:flex;align-items:center;justify-content:center;font-size:12px;transition:all 0.2s;flex-shrink:0;}
+  .toggle-dot.on{background:var(--accent);color:var(--bg);}
+
+  /* ── Progress ── */
+  .progress-bar{display:flex;gap:6px;margin-top:16px;}
+  .progress-step{height:3px;flex:1;border-radius:99px;background:var(--dim);transition:background 0.3s;}
+  .progress-step.done{background:var(--accent);}
+
+  /* ── Insights ── */
+  .insight-card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:22px 20px;margin-bottom:14px;animation:fadeUp 0.5s ease both;}
+  .insight-cat{font-size:9px;font-family:monospace;letter-spacing:2.5px;font-weight:700;margin-bottom:4px;}
+  .insight-text{font-size:14px;color:var(--text);line-height:1.65;}
+  .insight-action{border-top:1px solid var(--border);padding-top:12px;margin-top:12px;font-size:12px;color:var(--muted);font-family:monospace;}
+
+  .loader{display:flex;flex-direction:column;align-items:center;gap:14px;padding:40px;}
+  .spinner{width:32px;height:32px;border:2px solid var(--dim);border-top:2px solid var(--accent);border-radius:50%;animation:spin 0.8s linear infinite;}
+
+  .quick-action{padding:14px 18px;border-radius:10px;cursor:pointer;border:1px solid var(--border);
+    background:var(--surface);font-size:13px;font-family:monospace;font-weight:700;
+    transition:border-color 0.2s;margin-bottom:8px;touch-action:manipulation;}
+  .quick-action:hover{border-color:var(--accent);}
+
+  .goal-option{padding:9px 14px;border-radius:8px;cursor:pointer;margin-bottom:6px;
+    border:1px solid var(--border);color:var(--muted);font-size:13px;transition:all 0.2s;}
+  .goal-option.selected{border-color:var(--accent);background:var(--accentd);color:var(--accent);}
+
+  .two-col{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+  .three-col{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;}
+  h2{font-size:clamp(22px,5vw,32px);font-weight:900;letter-spacing:-1px;margin:12px 0;}
+  .section-title{font-size:10px;color:var(--muted);font-family:monospace;letter-spacing:2px;margin-bottom:12px;}
+  .chart-wrap{width:100%;overflow:hidden;}
+  .bar-chart{display:flex;align-items:flex-end;gap:6px;height:100px;padding:0 4px;}
+  .bar-col{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;}
+  .bar-fill{width:100%;border-radius:4px 4px 0 0;min-height:4px;transition:height 0.8s ease;}
+  .bar-lbl{font-size:8px;color:var(--muted);font-family:monospace;}
+  .bar-val{font-size:8px;font-family:monospace;}
+
+  /* ── Install Banner ── */
+  .install-banner{position:fixed;bottom:70px;left:16px;right:16px;z-index:99;
+    background:var(--card);border:1px solid var(--accent);border-radius:14px;
+    padding:16px 20px;box-shadow:0 0 30px rgba(0,255,178,0.15);
+    display:none;animation:fadeUp 0.4s ease;}
+  .install-banner.show{display:flex;align-items:center;gap:14px;}
+  .install-close{position:absolute;top:8px;right:12px;background:none;border:none;
+    font-size:18px;color:var(--muted);cursor:pointer;}
+
+  /* ── Toast ── */
+  .toast{position:fixed;top:20px;left:50%;transform:translateX(-50%);z-index:200;
+    background:var(--card);border:1px solid var(--border);border-radius:10px;
+    padding:12px 20px;font-size:13px;font-weight:700;font-family:monospace;color:var(--accent);
+    box-shadow:0 0 20px rgba(0,255,178,0.1);opacity:0;transition:opacity 0.3s;pointer-events:none;}
+  .toast.show{opacity:1;}
+</style>
+</head>
+<body>
+
+<div class="grid-bg"></div>
+<div class="orb" style="width:500px;height:500px;background:radial-gradient(circle,rgba(0,255,178,0.3),transparent 70%);left:-5%;top:0;"></div>
+<div class="orb" style="width:400px;height:400px;background:radial-gradient(circle,rgba(59,130,246,0.25),transparent 70%);right:-5%;top:30%;"></div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<!-- Install Banner -->
+<div class="install-banner" id="install-banner">
+  <div style="font-size:28px;">⚡</div>
+  <div style="flex:1;">
+    <div style="font-size:13px;font-weight:700;font-family:monospace;">INSTALA AXON</div>
+    <div style="font-size:11px;color:var(--muted);">acceso directo desde tu pantalla de inicio</div>
+  </div>
+  <button class="btn btn-primary" style="width:auto;padding:10px 18px;margin:0;font-size:11px;" id="install-btn">INSTALAR</button>
+  <button class="install-close" id="install-close">&times;</button>
+</div>
+
+<!-- ═══ LANDING ═══ -->
+<div id="screen-landing" class="screen active" style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;min-height:100dvh;text-align:center;padding:40px 24px;">
+  <div style="animation:fadeUp 0.8s ease both;max-width:560px;">
+    <span class="tag">Sistema Operativo Personal · Beta 2025</span>
+    <div style="font-size:clamp(80px,18vw,140px);font-weight:900;line-height:0.85;letter-spacing:-6px;margin:28px 0 8px;
+      background:linear-gradient(135deg,#F0F4FF 0%,#00FFB2 60%,#3B82F6 100%);
+      -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">AXON</div>
+    <p style="font-size:16px;color:var(--muted);line-height:1.8;max-width:420px;margin:20px auto 36px;">
+      No te dice qué hacer. Te muestra <span style="color:var(--text);">quién eres realmente</span> — con datos que tú mismo generas cada día.
+    </p>
+    <div style="display:flex;gap:10px;max-width:380px;margin:0 auto;flex-wrap:wrap;justify-content:center;">
+      <input type="email" id="landing-email" placeholder="tu@email.com" class="input-field" style="flex:1;min-width:200px;" enterkeyhint="go"/>
+      <button class="btn btn-primary" style="width:auto;margin:0;" onclick="landingEnter()">→ ENTRAR</button>
+    </div>
+    <div style="display:flex;gap:40px;justify-content:center;margin-top:48px;flex-wrap:wrap;">
+      <div style="text-align:center;"><div style="font-size:22px;font-weight:900;color:var(--accent);font-family:monospace;">90s</div><div style="font-size:9px;color:var(--muted);letter-spacing:2px;margin-top:3px;">TIEMPO DIARIO</div></div>
+      <div style="text-align:center;"><div style="font-size:22px;font-weight:900;color:var(--accent);font-family:monospace;">3 meses</div><div style="font-size:9px;color:var(--muted);letter-spacing:2px;margin-top:3px;">PRIMER INSIGHT</div></div>
+      <div style="text-align:center;"><div style="font-size:22px;font-weight:900;color:var(--accent);font-family:monospace;">$9.99</div><div style="font-size:9px;color:var(--muted);letter-spacing:2px;margin-top:3px;">PLAN PRO/MES</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ AUTH ═══ -->
+<div id="screen-auth" class="screen" style="display:none;min-height:100vh;min-height:100dvh;">
+  <div class="card accent-top" style="max-width:420px;width:100%;padding:36px;margin:60px auto;">
+    <div style="text-align:center;margin-bottom:32px;">
+      <div style="font-size:36px;font-weight:900;color:var(--accent);letter-spacing:-2px;">AXON</div>
+      <p id="auth-subtitle" style="color:var(--muted);font-size:13px;margin-top:6px;">Bienvenido de vuelta</p>
+    </div>
+    <div id="auth-name-wrap" style="display:none;">
+      <div class="input-group"><label class="input-label">NOMBRE</label><input type="text" id="auth-name" placeholder="Tu nombre" class="input-field" autocomplete="name"/></div>
+    </div>
+    <div class="input-group"><label class="input-label">EMAIL</label><input type="email" id="auth-email" placeholder="tu@email.com" class="input-field" autocomplete="email" enterkeyhint="next"/></div>
+    <div id="auth-password-wrap" style="display:none;">
+      <div class="input-group"><label class="input-label">CONTRASEÑA</label><input type="password" id="auth-password" placeholder="Mínimo 6 caracteres" class="input-field" autocomplete="new-password" enterkeyhint="go"/></div>
+    </div>
+    <div id="auth-extra" style="display:none;">
+      <div class="input-group"><label class="input-label">EDAD</label><input type="number" id="auth-age" placeholder="25" class="input-field" inputmode="numeric" min="16" max="80"/></div>
+      <div style="margin-bottom:20px;">
+        <div class="input-label">¿QUÉ QUIERES MEJORAR?</div>
+        <div id="goals-list"></div>
+      </div>
+    </div>
+    <button class="btn btn-primary" id="auth-submit-btn" onclick="authSubmit()">→ ENTRAR</button>
+    <div id="auth-error" style="display:none;text-align:center;margin-top:8px;font-size:12px;color:var(--rose);font-family:monospace;"></div>
+    <p style="text-align:center;font-size:12px;color:var(--muted);cursor:pointer;margin-top:12px;" onclick="toggleAuthMode()">
+      <span id="auth-toggle-text">¿Primera vez? Crea tu cuenta</span>
+    </p>
+  </div>
+</div>
+
+<!-- ═══ NAV ═══ -->
+<nav class="nav" id="main-nav" style="display:none;">
+  <button class="nav-btn active" id="nav-dashboard" onclick="goScreen('dashboard')"><span class="nav-icon">⚡</span><span class="nav-label">DASHBOARD</span></button>
+  <button class="nav-btn" id="nav-log" onclick="goScreen('log')"><span class="nav-icon">📝</span><span class="nav-label">REGISTRAR</span></button>
+  <button class="nav-btn" id="nav-insights" onclick="goScreen('insights')"><span class="nav-icon">🧠</span><span class="nav-label">INSIGHTS</span></button>
+  <button class="nav-btn" id="nav-patterns" onclick="goScreen('patterns')"><span class="nav-icon">📊</span><span class="nav-label">PATRONES</span></button>
+  <button class="nav-btn" id="nav-profile" onclick="goScreen('profile')"><span class="nav-icon">👤</span><span class="nav-label">PERFIL</span></button>
+</nav>
+
+<!-- ═══ DASHBOARD ═══ -->
+<div id="screen-dashboard" class="screen" style="display:none;">
+  <div style="margin-bottom:28px;">
+    <div id="dash-date" style="font-size:11px;color:var(--muted);font-family:monospace;letter-spacing:2px;margin-bottom:4px;"></div>
+    <div style="font-size:24px;font-weight:900;">Hola, <span id="dash-name" style="color:var(--accent);"></span></div>
+  </div>
+  <div id="dash-no-logs" style="display:none;">
+    <div class="card accent-top" style="text-align:center;padding:28px 24px;margin-bottom:20px;">
+      <div style="font-size:36px;margin-bottom:12px;">📝</div>
+      <p style="color:var(--muted);font-size:14px;margin-bottom:18px;line-height:1.7;">Haz tu primer registro para que AXON empiece a aprender.</p>
+      <button class="btn btn-primary" style="width:auto;" onclick="goScreen('log')">→ REGISTRAR HOY</button>
+    </div>
+  </div>
+  <div id="dash-metrics" style="display:none;">
+    <div class="tag" style="color:var(--blue);border-color:rgba(59,130,246,0.25);">HOY</div>
+    <div class="two-col" style="margin-top:12px;margin-bottom:20px;" id="dash-metric-cards"></div>
+  </div>
+  <div class="three-col" style="margin-bottom:20px;" id="dash-stats"></div>
+  <div id="dash-actions">
+    <div class="quick-action" style="color:var(--accent);" onclick="goScreen('insights')">→ Ver mis insights de IA</div>
+    <div class="quick-action" style="color:var(--blue);" onclick="goScreen('patterns')">→ Explorar patrones</div>
+    <div class="quick-action" style="color:var(--purple);" onclick="goScreen('log')">→ Registrar hoy</div>
+  </div>
+</div>
+
+<!-- ═══ LOG ═══ -->
+<div id="screen-log" class="screen" style="display:none;">
+  <div style="margin-bottom:28px;">
+    <span class="tag">Registro Diario</span>
+    <div class="progress-bar" id="log-progress"></div>
+  </div>
+  <div id="log-already" style="display:none;text-align:center;padding:40px 0;">
+    <div style="font-size:48px;margin-bottom:16px;">✦</div>
+    <span class="tag">Hoy ya registrado</span>
+    <p style="color:var(--muted);margin-top:16px;font-size:14px;line-height:1.7;">Ya registraste tu día. Revisa tus insights y patrones.</p>
+  </div>
+  <div id="log-saved" style="display:none;text-align:center;padding:60px 0;">
+    <div style="font-size:56px;margin-bottom:16px;">⚡</div>
+    <span class="tag">Registro guardado</span>
+    <p style="color:var(--muted);margin-top:16px;font-size:14px;">AXON está aprendiendo sobre ti.</p>
+    <button class="btn btn-ghost" style="width:auto;margin-top:20px;" onclick="goScreen('dashboard')">→ IR AL DASHBOARD</button>
+  </div>
+  <div id="log-form">
+    <!-- STEP 0 — Sleep -->
+    <div id="log-step-0" class="log-step">
+      <div class="card accent-top" style="padding:24px 22px;margin-bottom:20px;">
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;">
+          <span style="font-size:28px;">🌙</span><span style="font-size:17px;font-weight:700;">Sueño & Descanso</span>
+        </div>
+        <div class="slider-row">
+          <div class="slider-top"><span style="font-size:13px;">😴 Horas de sueño</span><span class="slider-val" id="val-sleep" style="color:var(--purple);">7<span style="color:var(--muted);font-size:11px;">/12</span></span></div>
+          <input type="range" min="1" max="12" value="7" id="sl-sleep" oninput="updateSlider('sleep',this.value,'/12')" style="accent-color:var(--purple);">
+        </div>
+        <div class="slider-row">
+          <div class="slider-top"><span style="font-size:13px;">✨ Calidad del sueño</span><span class="slider-val" id="val-mood" style="color:var(--blue);">7<span style="color:var(--muted);font-size:11px;">/10</span></span></div>
+          <input type="range" min="1" max="10" value="7" id="sl-mood" oninput="updateSlider('mood',this.value,'/10')" style="accent-color:var(--blue);">
+        </div>
+      </div>
+    </div>
+    <!-- STEP 1 — Energy -->
+    <div id="log-step-1" class="log-step" style="display:none;">
+      <div class="card accent-top" style="padding:24px 22px;margin-bottom:20px;">
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;">
+          <span style="font-size:28px;">⚡</span><span style="font-size:17px;font-weight:700;">Energía & Estado</span>
+        </div>
+        <div class="slider-row">
+          <div class="slider-top"><span style="font-size:13px;">⚡ Nivel de energía</span><span class="slider-val" id="val-energy" style="color:var(--accent);">7<span style="color:var(--muted);font-size:11px;">/10</span></span></div>
+          <input type="range" min="1" max="10" value="7" id="sl-energy" oninput="updateSlider('energy',this.value,'/10')" style="accent-color:var(--accent);">
+        </div>
+        <div class="slider-row">
+          <div class="slider-top"><span style="font-size:13px;">😤 Nivel de estrés</span><span class="slider-val" id="val-stress" style="color:var(--rose);">4<span style="color:var(--muted);font-size:11px;">/10</span></span></div>
+          <input type="range" min="1" max="10" value="4" id="sl-stress" oninput="updateSlider('stress',this.value,'/10')" style="accent-color:var(--rose);">
+        </div>
+        <div class="slider-row">
+          <div class="slider-top"><span style="font-size:13px;">🎯 Capacidad de foco</span><span class="slider-val" id="val-focus" style="color:var(--blue);">7<span style="color:var(--muted);font-size:11px;">/10</span></span></div>
+          <input type="range" min="1" max="10" value="7" id="sl-focus" oninput="updateSlider('focus',this.value,'/10')" style="accent-color:var(--blue);">
+        </div>
+      </div>
+    </div>
+    <!-- STEP 2 — Habits -->
+    <div id="log-step-2" class="log-step" style="display:none;">
+      <div class="card accent-top" style="padding:24px 22px;margin-bottom:20px;">
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;">
+          <span style="font-size:28px;">📋</span><span style="font-size:17px;font-weight:700;">Hábitos del día</span>
+        </div>
+        <div class="toggle-row" id="tog-exercise" onclick="toggleHabit('exercise')"><span style="font-size:14px;">🏃 Hice ejercicio hoy</span><div class="toggle-dot" id="dot-exercise"></div></div>
+        <div class="toggle-row" id="tog-screens" onclick="toggleHabit('screens')"><span style="font-size:14px;">📱 Usé pantallas antes de dormir</span><div class="toggle-dot" id="dot-screens"></div></div>
+        <div class="toggle-row" id="tog-alcohol" onclick="toggleHabit('alcohol')"><span style="font-size:14px;">🍺 Consumí alcohol</span><div class="toggle-dot" id="dot-alcohol"></div></div>
+        <div class="slider-row" style="margin-top:16px;">
+          <div class="slider-top"><span style="font-size:13px;">☕ Tazas de café</span><span class="slider-val" id="val-caffeine" style="color:var(--warm);">2<span style="color:var(--muted);font-size:11px;">/6</span></span></div>
+          <input type="range" min="0" max="6" value="2" id="sl-caffeine" oninput="updateSlider('caffeine',this.value,'/6')" style="accent-color:var(--warm);">
+        </div>
+        <div class="slider-row">
+          <div class="slider-top"><span style="font-size:13px;">💧 Vasos de agua</span><span class="slider-val" id="val-water" style="color:var(--blue);">4<span style="color:var(--muted);font-size:11px;">/8</span></span></div>
+          <input type="range" min="0" max="8" value="4" id="sl-water" oninput="updateSlider('water',this.value,'/8')" style="accent-color:var(--blue);">
+        </div>
+      </div>
+    </div>
+    <!-- STEP 3 — Notes -->
+    <div id="log-step-3" class="log-step" style="display:none;">
+      <div class="card accent-top" style="padding:24px 22px;margin-bottom:20px;">
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;">
+          <span style="font-size:28px;">✍️</span><span style="font-size:17px;font-weight:700;">Nota del día</span>
+        </div>
+        <p style="font-size:13px;color:var(--muted);margin-bottom:12px;">¿Algo que quieras recordar? (opcional)</p>
+        <textarea id="log-notes" placeholder="Hoy tuve una reunión difícil, pero luego me sentí bien después de caminar..." style="width:100%;height:120px;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px 14px;color:var(--text);font-size:16px;font-family:monospace;resize:vertical;outline:none;"></textarea>
+      </div>
+    </div>
+    <div style="display:flex;gap:10px;">
+      <button class="btn btn-ghost" id="log-back-btn" onclick="logBack()" style="display:none;flex:1;">← ATRÁS</button>
+      <button class="btn btn-primary" id="log-next-btn" onclick="logNext()" style="flex:1;">SIGUIENTE →</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ INSIGHTS ═══ -->
+<div id="screen-insights" class="screen" style="display:none;">
+  <div style="margin-bottom:24px;">
+    <span class="tag">IA Insights</span>
+    <div id="insights-count" style="font-size:11px;color:var(--muted);font-family:monospace;margin-top:8px;"></div>
+  </div>
+  <div id="insights-no-data" style="display:none;text-align:center;padding:40px 0;">
+    <div style="font-size:48px;margin-bottom:16px;">🧠</div>
+    <span class="tag">Sin datos</span>
+    <p style="color:var(--muted);margin-top:16px;font-size:14px;line-height:1.7;">Registra al menos 1 día primero.</p>
+  </div>
+  <div id="insights-cta" style="display:none;">
+    <div class="card accent-top" style="text-align:center;padding:28px 24px;margin-bottom:20px;">
+      <div style="font-size:40px;margin-bottom:12px;">🧠</div>
+      <p style="color:var(--muted);font-size:14px;margin-bottom:20px;line-height:1.7;">AXON analizará tus registros y descubrirá patrones invisibles.</p>
+      <button class="btn btn-primary" style="width:auto;" onclick="generateInsights()">✦ GENERAR INSIGHTS</button>
+    </div>
+  </div>
+  <div id="insights-loader" style="display:none;" class="loader">
+    <div class="spinner"></div>
+    <span style="font-family:monospace;font-size:12px;color:var(--muted);letter-spacing:2px;">ANALIZANDO TUS DATOS...</span>
+  </div>
+  <div id="insights-error" style="display:none;" class="card">
+    <p style="color:var(--rose);font-size:13px;font-family:monospace;margin-bottom:12px;" id="insights-error-msg"></p>
+    <button class="btn btn-ghost" onclick="generateInsights()">Reintentar</button>
+  </div>
+  <div id="insights-list"></div>
+  <div id="insights-regen" style="display:none;margin-top:8px;">
+    <button class="btn btn-ghost" onclick="generateInsights()">↻ REGENERAR INSIGHTS</button>
+  </div>
+</div>
+
+<!-- ═══ PATTERNS ═══ -->
+<div id="screen-patterns" class="screen" style="display:none;">
+  <div style="margin-bottom:24px;"><span class="tag">Patrones Visuales</span></div>
+  <div id="patterns-no-data" style="display:none;text-align:center;padding:40px 0;">
+    <div style="font-size:48px;margin-bottom:16px;">📊</div>
+    <span class="tag">Necesitas más datos</span>
+    <p style="color:var(--muted);margin-top:16px;font-size:14px;line-height:1.7;">Registra al menos 2 días para ver tus patrones.</p>
+  </div>
+  <div id="patterns-content" style="display:none;">
+    <div class="card" style="padding:20px 18px;margin-bottom:14px;">
+      <div class="section-title">ENERGÍA — ÚLTIMOS DÍAS</div>
+      <div class="chart-wrap"><svg id="chart-energy" width="100%" height="100" viewBox="0 0 300 100"></svg></div>
+    </div>
+    <div class="card" style="padding:20px 18px;margin-bottom:14px;">
+      <div class="section-title">FOCO — ÚLTIMOS DÍAS</div>
+      <div class="chart-wrap"><svg id="chart-focus" width="100%" height="100" viewBox="0 0 300 100"></svg></div>
+    </div>
+    <div class="card" style="padding:20px 18px;margin-bottom:14px;">
+      <div class="section-title">SUEÑO — HORAS POR DÍA</div>
+      <div id="chart-sleep-bars" class="bar-chart"></div>
+    </div>
+    <div class="two-col" id="patterns-stats"></div>
+  </div>
+</div>
+
+<!-- ═══ PROFILE ═══ -->
+<div id="screen-profile" class="screen" style="display:none;">
+  <div style="margin-bottom:24px;"><span class="tag">Mi Perfil</span></div>
+  <div class="card accent-top" style="padding:24px 22px;margin-bottom:16px;">
+    <div style="display:flex;gap:16px;align-items:center;margin-bottom:20px;">
+      <div id="prof-avatar" style="width:52px;height:52px;border-radius:50%;background:linear-gradient(135deg,#00FFB2,#3B82F6);display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:900;color:#07090F;flex-shrink:0;"></div>
+      <div><div id="prof-name" style="font-size:18px;font-weight:800;"></div><div id="prof-email" style="font-size:12px;color:var(--muted);font-family:monospace;"></div></div>
+    </div>
+    <div class="two-col" id="prof-stats"></div>
+  </div>
+  <div class="card" style="padding:18px 20px;margin-bottom:16px;">
+    <div class="section-title">MI OBJETIVO</div>
+    <div id="prof-goal" style="font-size:14px;"></div>
+  </div>
+  <div class="card" style="padding:18px 20px;margin-bottom:24px;">
+    <div class="section-title">PROGRESO AXON</div>
+    <div id="prof-progress"></div>
+  </div>
+  <button class="btn btn-danger" onclick="logout()">← CERRAR SESIÓN</button>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════════════
+// AXON PWA — Production Build
+// ═══════════════════════════════════════════════════════════════
+
+// ── Config ──
+const CONFIG = {
+  // Your Netlify Function URL (keeps API key safe server-side)
+  API_ENDPOINT: '/api/insights',
+  USE_PROXY: true,
+  // Only for local dev — NEVER commit a real key
+  DEV_API_KEY: '',
+};
+
+const GOALS = [
+  'Rendir más en el trabajo',
+  'Manejar mejor mi energía',
+  'Tomar mejores decisiones',
+  'Entenderme a mí mismo',
+  'Mejorar mi salud mental',
+];
+
+// ── State ──
+let state = {
+  screen: 'dashboard',
+  user: null,
+  logs: [],
+  authMode: 'login',
+  logStep: 0,
+  habits: { exercise: false, screens: false, alcohol: false },
+  selectedGoal: '',
+};
+
+// ── Storage ──
+const DB = {
+  get(k) { try { return JSON.parse(localStorage.getItem(k)); } catch { return null; } },
+  set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) { console.warn('Storage:', e); } },
+  del(k) { try { localStorage.removeItem(k); } catch {} },
+};
+
+// ── Utilities ──
+function toast(msg, ms = 2500) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), ms);
+}
+
+function updateSlider(id, val, suffix) {
+  const el = document.getElementById('val-' + id);
+  if (el) el.innerHTML = val + '<span style="color:var(--muted);font-size:11px;">' + suffix + '</span>';
+}
+
+// ══════════════════════════════════
+// PWA — Service Worker & Install
+// ══════════════════════════════════
+let deferredInstallPrompt = null;
+
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/sw.js')
+    .then(r => console.log('AXON SW registered', r.scope))
+    .catch(e => console.warn('SW failed:', e));
+}
+
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  deferredInstallPrompt = e;
+  setTimeout(() => {
+    if (deferredInstallPrompt && state.user) {
+      document.getElementById('install-banner').classList.add('show');
+    }
+  }, 8000);
+});
+
+document.getElementById('install-btn')?.addEventListener('click', async () => {
+  if (!deferredInstallPrompt) return;
+  deferredInstallPrompt.prompt();
+  const r = await deferredInstallPrompt.userChoice;
+  if (r.outcome === 'accepted') toast('⚡ AXON instalado');
+  deferredInstallPrompt = null;
+  document.getElementById('install-banner').classList.remove('show');
+});
+
+document.getElementById('install-close')?.addEventListener('click', () => {
+  document.getElementById('install-banner').classList.remove('show');
+});
+
+window.addEventListener('appinstalled', () => {
+  document.getElementById('install-banner').classList.remove('show');
+  deferredInstallPrompt = null;
+});
+
+// ══════════════════════════════════
+// Navigation
+// ══════════════════════════════════
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => {
+    s.style.display = 'none'; s.classList.remove('active');
+  });
+  const el = document.getElementById('screen-' + id);
+  if (!el) return;
+  el.style.display = 'block';
+  requestAnimationFrame(() => el.classList.add('active'));
+  window.scrollTo(0, 0);
+}
+
+function goScreen(id) {
+  state.screen = id;
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  const nb = document.getElementById('nav-' + id);
+  if (nb) nb.classList.add('active');
+  showScreen(id);
+  const r = { dashboard: renderDashboard, log: renderLog, insights: renderInsights, patterns: renderPatterns, profile: renderProfile };
+  if (r[id]) r[id]();
+}
+
+// ══════════════════════════════════
+// Auth
+// ══════════════════════════════════
+function landingEnter() {
+  const email = document.getElementById('landing-email').value;
+  if (email) document.getElementById('auth-email').value = email;
+  showScreen('auth');
+}
+
+function toggleAuthMode() {
+  state.authMode = state.authMode === 'login' ? 'register' : 'login';
+  const isReg = state.authMode === 'register';
+  document.getElementById('auth-subtitle').textContent = isReg ? 'Crea tu cuenta' : 'Bienvenido de vuelta';
+  document.getElementById('auth-name-wrap').style.display = isReg ? 'block' : 'none';
+  document.getElementById('auth-password-wrap').style.display = 'block';
+  document.getElementById('auth-extra').style.display = isReg ? 'block' : 'none';
+  document.getElementById('auth-submit-btn').textContent = isReg ? '→ CREAR CUENTA' : '→ ENTRAR';
+  document.getElementById('auth-toggle-text').textContent = isReg ? '¿Ya tienes cuenta? Inicia sesión' : '¿Primera vez? Crea tu cuenta';
+  document.getElementById('auth-error').style.display = 'none';
+}
+
+function showAuthError(msg) {
+  const el = document.getElementById('auth-error');
+  el.textContent = msg;
+  el.style.display = 'block';
+}
+
+async function authSubmit() {
+  const email = document.getElementById('auth-email').value.trim();
+  if (!email) return showAuthError('Necesitas un email');
+  if (!email.includes('@')) return showAuthError('Email no válido');
+
+  document.getElementById('auth-error').style.display = 'none';
+  const btn = document.getElementById('auth-submit-btn');
+  btn.disabled = true;
+  btn.textContent = '⏳ CARGANDO...';
+
+  // TODO: Replace with Supabase Auth (see GUIA-DEPLOY.md)
+  if (state.authMode === 'register') {
+    const name = document.getElementById('auth-name').value.trim() || 'Usuario';
+    const age = document.getElementById('auth-age').value || '?';
+    state.user = {
+      name, email, age,
+      goal: state.selectedGoal || GOALS[0],
+      joinedAt: new Date().toISOString()
+    };
+    DB.set('axon_user', state.user);
+    toast('⚡ Cuenta creada');
+  } else {
+    const saved = DB.get('axon_user');
+    if (saved && saved.email === email) {
+      state.user = saved;
+    } else {
+      state.user = { name: 'Usuario', email, age: '?', goal: GOALS[0], joinedAt: new Date().toISOString() };
+      DB.set('axon_user', state.user);
+    }
+    toast('→ Bienvenido de vuelta');
+  }
+
+  state.logs = DB.get('axon_logs') || [];
+  btn.disabled = false;
+  btn.textContent = '→ ENTRAR';
+  launchApp();
+}
+
+function launchApp() {
+  document.getElementById('main-nav').style.display = 'flex';
+  goScreen('dashboard');
+}
+
+function logout() {
+  DB.del('axon_user');
+  DB.del('axon_logs');
+  state.user = null;
+  state.logs = [];
+  document.getElementById('main-nav').style.display = 'none';
+  showScreen('landing');
+  toast('→ Sesión cerrada');
+}
+
+// ══════════════════════════════════
+// Dashboard
+// ══════════════════════════════════
+function renderDashboard() {
+  const u = state.user, logs = state.logs, latest = logs[logs.length - 1];
+  document.getElementById('dash-date').textContent = new Date().toLocaleDateString('es-MX', { weekday: 'long', day: 'numeric', month: 'long' }).toUpperCase();
+  document.getElementById('dash-name').textContent = u.name.split(' ')[0];
+
+  const avg = k => logs.length ? (logs.reduce((a, l) => a + (l[k] || 0), 0) / logs.length).toFixed(1) : '0';
+
+  document.getElementById('dash-no-logs').style.display = logs.length === 0 ? 'block' : 'none';
+  document.getElementById('dash-metrics').style.display = latest ? 'block' : 'none';
+
+  if (latest) {
+    document.getElementById('dash-metric-cards').innerHTML = [
+      { l: 'Energía', v: latest.energy, c: 'var(--warm)', icon: '⚡' },
+      { l: 'Foco', v: latest.focus, c: 'var(--blue)', icon: '🎯' },
+      { l: 'Ánimo', v: latest.mood, c: 'var(--accent)', icon: '✨' },
+      { l: 'Estrés', v: latest.stress, c: 'var(--rose)', icon: '😤' },
+    ].map(({ l, v, c, icon }) =>
+      `<div class="metric-card">
+        <div style="font-size:20px;margin-bottom:6px;">${icon}</div>
+        <div style="font-size:11px;color:var(--muted);font-family:monospace;letter-spacing:1px;margin-bottom:4px;">${l.toUpperCase()}</div>
+        <div class="metric-val" style="color:${c};">${v}<span style="font-size:12px;color:var(--muted);">/10</span></div>
+        <div class="metric-bar"><div class="metric-fill" style="width:${v * 10}%;background:${c};box-shadow:0 0 8px ${c};"></div></div>
+      </div>`
+    ).join('');
+  }
+
+  document.getElementById('dash-stats').innerHTML = [
+    { l: 'RACHA', v: `${logs.length}d`, c: 'var(--accent)' },
+    { l: 'SUEÑO AVG', v: `${avg('sleep')}h`, c: 'var(--purple)' },
+    { l: 'ENERGÍA AVG', v: `${avg('energy')}/10`, c: 'var(--warm)' },
+  ].map(({ l, v, c }) => `<div class="stat-card"><div class="stat-val" style="color:${c};">${v}</div><div class="stat-label">${l}</div></div>`).join('');
+}
+
+// ══════════════════════════════════
+// Log
+// ══════════════════════════════════
+function renderGoals() {
+  const el = document.getElementById('goals-list');
+  if (!el) return;
+  el.innerHTML = GOALS.map(g =>
+    `<div class="goal-option${state.selectedGoal === g ? ' selected' : ''}" onclick="selectGoal('${g}')">${g}</div>`
+  ).join('');
+}
+
+function selectGoal(g) { state.selectedGoal = g; renderGoals(); }
+
+function renderLog() {
+  const today = new Date().toISOString().split('T')[0];
+  const todayLog = state.logs.find(l => l.date === today);
+  document.getElementById('log-already').style.display = todayLog ? 'block' : 'none';
+  document.getElementById('log-saved').style.display = 'none';
+  document.getElementById('log-form').style.display = todayLog ? 'none' : 'block';
+  state.logStep = 0;
+  state.habits = { exercise: false, screens: false, alcohol: false };
+
+  // Reset sliders to defaults
+  ['sl-sleep','sl-mood','sl-energy','sl-stress','sl-focus','sl-caffeine','sl-water'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = el.defaultValue;
+  });
+  updateSlider('sleep', 7, '/12'); updateSlider('mood', 7, '/10');
+  updateSlider('energy', 7, '/10'); updateSlider('stress', 4, '/10');
+  updateSlider('focus', 7, '/10'); updateSlider('caffeine', 2, '/6');
+  updateSlider('water', 4, '/8');
+  document.getElementById('log-notes').value = '';
+
+  renderLogStep();
+}
+
+function renderLogStep() {
+  document.querySelectorAll('.log-step').forEach((s, i) => s.style.display = i === state.logStep ? 'block' : 'none');
+  document.getElementById('log-back-btn').style.display = state.logStep > 0 ? 'block' : 'none';
+  document.getElementById('log-next-btn').textContent = state.logStep < 3 ? 'SIGUIENTE →' : '✦ GUARDAR DÍA';
+  document.getElementById('log-progress').innerHTML = [0, 1, 2, 3].map(i =>
+    `<div class="progress-step${i <= state.logStep ? ' done' : ''}"></div>`
+  ).join('');
+  ['exercise', 'screens', 'alcohol'].forEach(h => {
+    document.getElementById('tog-' + h).className = 'toggle-row' + (state.habits[h] ? ' on' : '');
+    document.getElementById('dot-' + h).className = 'toggle-dot' + (state.habits[h] ? ' on' : '');
+    document.getElementById('dot-' + h).textContent = state.habits[h] ? '✓' : '';
+  });
+}
+
+function toggleHabit(h) {
+  state.habits[h] = !state.habits[h];
+  document.getElementById('tog-' + h).className = 'toggle-row' + (state.habits[h] ? ' on' : '');
+  document.getElementById('dot-' + h).className = 'toggle-dot' + (state.habits[h] ? ' on' : '');
+  document.getElementById('dot-' + h).textContent = state.habits[h] ? '✓' : '';
+}
+
+function logNext() {
+  if (state.logStep < 3) { state.logStep++; renderLogStep(); return; }
+
+  const log = {
+    date: new Date().toISOString().split('T')[0],
+    timestamp: new Date().toISOString(),
+    sleep: +document.getElementById('sl-sleep').value,
+    mood: +document.getElementById('sl-mood').value,
+    energy: +document.getElementById('sl-energy').value,
+    stress: +document.getElementById('sl-stress').value,
+    focus: +document.getElementById('sl-focus').value,
+    caffeine: +document.getElementById('sl-caffeine').value,
+    water: +document.getElementById('sl-water').value,
+    notes: document.getElementById('log-notes').value.trim(),
+    exercise: state.habits.exercise,
+    screens: state.habits.screens,
+    alcohol: state.habits.alcohol,
+  };
+
+  const next = [...state.logs.filter(l => l.date !== log.date), log].sort((a, b) => a.date > b.date ? 1 : -1);
+  state.logs = next;
+  DB.set('axon_logs', next);
+
+  document.getElementById('log-form').style.display = 'none';
+  document.getElementById('log-saved').style.display = 'block';
+  toast('⚡ Día guardado');
+}
+
+function logBack() { if (state.logStep > 0) { state.logStep--; renderLogStep(); } }
+
+// ══════════════════════════════════
+// Insights
+// ══════════════════════════════════
+function renderInsights() {
+  const logs = state.logs;
+  document.getElementById('insights-count').textContent = `Basado en ${logs.length} registro${logs.length !== 1 ? 's' : ''}`;
+  document.getElementById('insights-no-data').style.display = logs.length === 0 ? 'block' : 'none';
+  document.getElementById('insights-cta').style.display = logs.length > 0 ? 'block' : 'none';
+  document.getElementById('insights-loader').style.display = 'none';
+  document.getElementById('insights-error').style.display = 'none';
+  document.getElementById('insights-list').innerHTML = '';
+  document.getElementById('insights-regen').style.display = 'none';
+}
+
+async function generateInsights() {
+  const logs = state.logs;
+  if (!logs.length) return;
+
+  document.getElementById('insights-cta').style.display = 'none';
+  document.getElementById('insights-loader').style.display = 'flex';
+  document.getElementById('insights-error').style.display = 'none';
+  document.getElementById('insights-list').innerHTML = '';
+  document.getElementById('insights-regen').style.display = 'none';
+
+  const summary = logs.slice(-14).map(l =>
+    `Fecha:${l.date} Sueño:${l.sleep}h Energía:${l.energy}/10 Foco:${l.focus}/10 Estrés:${l.stress}/10 ` +
+    `Ánimo:${l.mood}/10 Ejercicio:${l.exercise ? 'Sí' : 'No'} Cafeína:${l.caffeine} Agua:${l.water} ` +
+    `Pantallas:${l.screens ? 'Sí' : 'No'} Alcohol:${l.alcohol ? 'Sí' : 'No'}` +
+    (l.notes ? ` Nota:${l.notes}` : '')
+  ).join('\n');
+
+  try {
+    let insights;
+
+    if (CONFIG.USE_PROXY) {
+      const res = await fetch(CONFIG.API_ENDPOINT, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ logs: summary }),
+      });
+      if (!res.ok) throw new Error(`API error: ${res.status}`);
+      const data = await res.json();
+      insights = data.insights || data;
+    } else {
+      const res = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': CONFIG.DEV_API_KEY,
+          'anthropic-version': '2023-06-01',
+          'anthropic-dangerous-allow-browser': 'true',
+        },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-20250514',
+          max_tokens: 1000,
+          system: 'Eres AXON, sistema de inteligencia personal. Analiza registros y genera exactamente 4 insights. Responde SOLO con JSON válido sin markdown.',
+          messages: [{ role: 'user', content: `Registros:\n${summary}\n\nFormato:\n[{"icon":"emoji","categoria":"NOMBRE","insight":"patrón específico","accion":"recomendación concreta","color":"#hexcolor"}]\n\nColores: #00FFB2, #3B82F6, #8B5CF6, #FF6B35, #F43F5E` }],
+        }),
+      });
+      const data = await res.json();
+      const raw = data.content.map(b => b.text || '').join('');
+      insights = JSON.parse(raw.replace(/```json|```/g, '').trim());
+    }
+
+    document.getElementById('insights-loader').style.display = 'none';
+    document.getElementById('insights-list').innerHTML = insights.map((ins, i) =>
+      `<div class="insight-card" style="border-top:2px solid ${ins.color};animation-delay:${i * 0.1}s;">
+        <div style="display:flex;gap:12px;align-items:flex-start;">
+          <span style="font-size:26px;">${ins.icon}</span>
+          <div>
+            <div class="insight-cat" style="color:${ins.color};">${ins.categoria}</div>
+            <div class="insight-text">${ins.insight}</div>
+          </div>
+        </div>
+        <div class="insight-action"><span style="color:${ins.color};">→ </span>${ins.accion}</div>
+      </div>`
+    ).join('');
+    document.getElementById('insights-regen').style.display = 'block';
+
+  } catch (e) {
+    console.error('Insights error:', e);
+    document.getElementById('insights-loader').style.display = 'none';
+    document.getElementById('insights-error').style.display = 'block';
+    document.getElementById('insights-error-msg').textContent = CONFIG.USE_PROXY
+      ? 'No se pudieron generar insights. Verifica tu conexión.'
+      : 'Configura tu API endpoint. Ver GUIA-DEPLOY.md';
+  }
+}
+
+// ══════════════════════════════════
+// Patterns
+// ══════════════════════════════════
+function renderPatterns() {
+  const logs = state.logs;
+  document.getElementById('patterns-no-data').style.display = logs.length < 2 ? 'block' : 'none';
+  document.getElementById('patterns-content').style.display = logs.length >= 2 ? 'block' : 'none';
+  if (logs.length < 2) return;
+
+  const recent = logs.slice(-10);
+  drawLineChart('chart-energy', recent.map(l => l.energy), '#FF6B35');
+  drawLineChart('chart-focus', recent.map(l => l.focus), '#3B82F6');
+
+  document.getElementById('chart-sleep-bars').innerHTML = recent.map(l =>
+    `<div class="bar-col">
+      <div class="bar-val" style="color:var(--purple);">${l.sleep}</div>
+      <div class="bar-fill" style="height:${(l.sleep / 12) * 80}px;background:var(--purple);box-shadow:0 0 8px var(--purple);"></div>
+      <div class="bar-lbl">${l.date.slice(8)}</div>
+    </div>`
+  ).join('');
+
+  const avg = k => (logs.reduce((a, l) => a + (l[k] || 0), 0) / logs.length).toFixed(1);
+  document.getElementById('patterns-stats').innerHTML = [
+    { l: 'Días con ejercicio', v: `${logs.filter(l => l.exercise).length}/${logs.length}`, c: 'var(--accent)' },
+    { l: 'Pantallas nocturnas', v: `${logs.filter(l => l.screens).length}/${logs.length}`, c: 'var(--rose)' },
+    { l: 'Sueño promedio', v: `${avg('sleep')}h`, c: 'var(--purple)' },
+    { l: 'Cafeína promedio', v: `${avg('caffeine')} tzs`, c: 'var(--warm)' },
+  ].map(({ l, v, c }) => `<div class="stat-card"><div class="stat-val" style="color:${c};">${v}</div><div class="stat-label">${l}</div></div>`).join('');
+}
+
+function drawLineChart(id, data, color) {
+  const svg = document.getElementById(id);
+  if (!svg || !data.length) return;
+  const w = 300, h = 100, pad = 16;
+  const max = Math.max(...data, 1), min = Math.min(...data, 0), range = max - min || 1;
+  const pts = data.map((v, i) => {
+    const x = pad + (i / Math.max(data.length - 1, 1)) * (w - pad * 2);
+    const y = pad + ((max - v) / range) * (h - pad * 2);
+    return `${x},${y}`;
+  });
+  const area = `${pad},${h - pad} ${pts.join(' ')} ${pad + (data.length - 1) / Math.max(data.length - 1, 1) * (w - pad * 2)},${h - pad}`;
+  const gId = 'g' + id;
+  svg.innerHTML = `
+    <defs><linearGradient id="${gId}" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="${color}" stop-opacity="0.3"/>
+      <stop offset="100%" stop-color="${color}" stop-opacity="0"/>
+    </linearGradient></defs>
+    <polygon points="${area}" fill="url(#${gId})"/>
+    <polyline points="${pts.join(' ')}" fill="none" stroke="${color}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+    ${data.map((v, i) => {
+      const x = pad + (i / Math.max(data.length - 1, 1)) * (w - pad * 2);
+      const y = pad + ((max - v) / range) * (h - pad * 2);
+      return `<circle cx="${x}" cy="${y}" r="3" fill="${color}"/>`;
+    }).join('')}`;
+}
+
+// ══════════════════════════════════
+// Profile
+// ══════════════════════════════════
+function renderProfile() {
+  const u = state.user, logs = state.logs;
+  document.getElementById('prof-avatar').textContent = u.name[0];
+  document.getElementById('prof-name').textContent = u.name;
+  document.getElementById('prof-email').textContent = u.email;
+  document.getElementById('prof-goal').textContent = u.goal;
+
+  document.getElementById('prof-stats').innerHTML = [
+    { l: 'Edad', v: `${u.age} años` },
+    { l: 'Beta desde', v: new Date(u.joinedAt).toLocaleDateString('es-MX', { month: 'short', year: 'numeric' }) },
+    { l: 'Total logs', v: `${logs.length} días` },
+    { l: 'Plan', v: 'FREE BETA' },
+  ].map(({ l, v }) =>
+    `<div style="background:var(--surface);border-radius:10px;padding:10px 12px;border:1px solid var(--border);">
+      <div style="font-size:10px;color:var(--muted);font-family:monospace;letter-spacing:1px;">${l.toUpperCase()}</div>
+      <div style="font-size:13px;font-weight:600;margin-top:3px;">${v}</div>
+    </div>`
+  ).join('');
+
+  document.getElementById('prof-progress').innerHTML = [
+    { l: 'Días registrados', v: logs.length, max: 30, c: 'var(--accent)' },
+    { l: 'Días para insights clave', v: Math.min(logs.length, 7), max: 7, c: 'var(--blue)' },
+    { l: 'Precisión del modelo', v: Math.min(logs.length * 10, 100), max: 100, c: 'var(--purple)', s: '%' },
+  ].map(({ l, v, max, c, s = '' }) =>
+    `<div style="margin-bottom:14px;">
+      <div style="display:flex;justify-content:space-between;margin-bottom:5px;">
+        <span style="font-size:12px;color:var(--muted);font-family:monospace;">${l}</span>
+        <span style="font-size:12px;color:${c};font-family:monospace;font-weight:700;">${v}${s}/${max}${s}</span>
+      </div>
+      <div style="height:4px;background:var(--border);border-radius:99px;">
+        <div style="height:100%;width:${(v / max) * 100}%;background:${c};border-radius:99px;box-shadow:0 0 8px ${c};transition:width 1s ease;"></div>
+      </div>
+    </div>`
+  ).join('');
+}
+
+// ══════════════════════════════════
+// Init
+// ══════════════════════════════════
+window.onload = () => {
+  const u = DB.get('axon_user');
+  const l = DB.get('axon_logs');
+  if (u) { state.user = u; state.logs = l || []; launchApp(); }
+  renderGoals();
+};
+
+document.getElementById('landing-email')?.addEventListener('keydown', e => {
+  if (e.key === 'Enter') landingEnter();
+});
+</script>
+</body>
+</html>
